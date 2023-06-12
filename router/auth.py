@@ -38,14 +38,13 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_ticket(db: db_dependency, create_user_request: TicketRequest):
+async def book_ticket(db: db_dependency, create_user_request: TicketRequest):
     existing_ticket = db.query(Ticket).filter(
         Ticket.seat_number == create_user_request.seat_number,
         Ticket.train_number == create_user_request.train_number
     ).first()
     if existing_ticket:
-        raise HTTPException(status_code=400, detail="Seat number already booked for this train.")
-
+        raise HTTPException(status_code=400, detail="The seat is already reserved.")
 
     create_user_model = Ticket(
         passenger_name=create_user_request.passenger_name,
@@ -63,7 +62,7 @@ async def create_ticket(db: db_dependency, create_user_request: TicketRequest):
     return {"message": "ticket booked Successfully"}
 
 @router.get("/ticket", status_code=status.HTTP_200_OK)
-async def get_users(db: db_dependency):
+async def get_ticket_details(db: db_dependency):
     return db.query(Ticket).all()
 
 @router.delete("/tickets/{ticket_id}")
