@@ -39,8 +39,13 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_ticket(db: db_dependency, create_user_request: TicketRequest):
-    if db.query(Ticket).filter(Ticket.seat_number == create_user_request.seat_number).first():
-        raise HTTPException(status_code=400, detail="seat number already booked")
+    existing_ticket = db.query(Ticket).filter(
+        Ticket.seat_number == create_user_request.seat_number,
+        Ticket.train_number == create_user_request.train_number
+    ).first()
+    if existing_ticket:
+        raise HTTPException(status_code=400, detail="Seat number already booked for this train.")
+
 
     create_user_model = Ticket(
         passenger_name=create_user_request.passenger_name,
