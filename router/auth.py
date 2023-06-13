@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime, date
+from datetime import timedelta, datetime
 from typing_extensions import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, validator
@@ -6,6 +6,9 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import Ticket
 from starlette import status
+from sqlalchemy import and_
+from datetime import date
+
 
 router = APIRouter(
     prefix='/booking',
@@ -54,8 +57,11 @@ db_dependency = Annotated[Session, Depends(get_db)]
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def book_ticket(db: db_dependency, create_user_request: TicketRequest):
     existing_ticket = db.query(Ticket).filter(
-        Ticket.seat_number == create_user_request.seat_number,
-        Ticket.train_number == create_user_request.train_number
+        and_(
+            Ticket.seat_number == create_user_request.seat_number,
+            Ticket.train_number == create_user_request.train_number,
+            Ticket.date == create_user_request.date
+        )
     ).first()
     if existing_ticket:
         raise HTTPException(status_code=400, detail="The seat is already reserved.")
