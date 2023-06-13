@@ -1,7 +1,7 @@
 from datetime import timedelta, datetime, date
 from typing_extensions import Annotated
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import Ticket
@@ -22,6 +22,20 @@ class TicketRequest(BaseModel):
     time: str
     boarding_station: str
     departure_station: str
+
+    @validator('date')
+    def validate_date(cls, value):
+        if value < date.today():
+            raise ValueError("Date must be in the future")
+        return value
+
+    @validator('time')
+    def validate_time(cls, value):
+        try:
+            datetime.strptime(value, "%H:%M")
+        except ValueError:
+            raise ValueError("Invalid time format. Expected format: HH:MM")
+        return value
 
 class TicketUpdate(BaseModel):
     date: date
@@ -55,7 +69,6 @@ async def book_ticket(db: db_dependency, create_user_request: TicketRequest):
         boarding_station=create_user_request.boarding_station,
         departure_station=create_user_request.departure_station
     )
-
     db.add(create_user_model)
     db.commit()
     db.refresh(create_user_model)
@@ -78,10 +91,7 @@ def update_ticket(ticket_id: int, ticket_update: TicketUpdate,
     ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ticket not found')
-
-    # Update the ticket with the provided data
     ticket.date = ticket_update.date
     ticket.time = ticket_update.time
-
     db.commit()
     return {'message': 'Ticket updated successfully'}
