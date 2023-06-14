@@ -1,13 +1,12 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
 from typing_extensions import Annotated
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import Ticket
 from starlette import status
 from sqlalchemy import and_
-from datetime import date
 
 
 router = APIRouter(
@@ -43,6 +42,10 @@ class TicketRequest(BaseModel):
 class TicketUpdate(BaseModel):
     date: date
     time: str
+
+    class Config:
+        orm_mode = True
+
 
 def get_db():
     db = SessionLocal()
@@ -81,8 +84,11 @@ async def book_ticket(db: db_dependency, create_user_request: TicketRequest):
     return {"message": "ticket booked Successfully"}
 
 @router.get("/ticket", status_code=status.HTTP_200_OK)
-async def get_ticket_details(db: db_dependency):
-    return db.query(Ticket).all()
+async def get_ticket_details(db: db_dependency,
+                             page: int = Query(1, gt=0)):
+    per_page = 5
+    offset = (page - 1) * per_page
+    return db.query(Ticket).offset(offset).limit(per_page).all()
 
 @router.delete("/tickets/{ticket_id}")
 def delete_ticket(ticket_id: int, db: db_dependency):
