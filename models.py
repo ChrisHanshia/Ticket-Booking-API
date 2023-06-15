@@ -13,6 +13,7 @@ class Ticket(Base):
     time = Column(String)
     boarding_station = Column(String)
     departure_station = Column(String)
+    is_booked = Column(Boolean, default=True)
     
     class Train(Base):
     __tablename__ = 'trains'
