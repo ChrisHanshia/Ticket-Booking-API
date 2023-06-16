@@ -39,6 +39,13 @@ class TicketRequest(BaseModel):
             raise ValueError("Invalid time format. Expected format: HH:MM")
         return value
 
+    @validator('train_number')
+    def validate_train_number(cls, value):
+        valid_train_numbers = ['T1', 'T2', 'T3', 'T4', 'T5']
+        if value not in valid_train_numbers:
+            raise ValueError("Invalid train number. Only trains from T1 to T5 are allowed.")
+        return value
+
     @validator('seat_number')
     def validate_seat_number(cls, value):
         row_column = value.split()
@@ -50,7 +57,7 @@ class TicketRequest(BaseModel):
         valid_columns = [str(i) for i in range(1, 26)]
         if row not in valid_rows or column not in valid_columns:
             raise ValueError(
-                "Invalid seat number. Seat number must be in the format A 1-S 25 and within the range A 1-25 to S 1-25.")
+                "Invalid seat number. Seat number must be in the format A 1 - S 25 and within the range A 1-25 to S 1-25.")
         return value
 
 class TicketUpdate(BaseModel):
@@ -126,6 +133,7 @@ def update_ticket(ticket_id: int, ticket_update: TicketUpdate,
     db.commit()
     return {'message': 'Ticket updated successfully'}
 
+
 @router.get("/seats/availability")
 async def check_seat_availability(seat_number: str, train_number: str, date: date, db: db_dependency):
     seat = db.query(Ticket).filter(
@@ -140,4 +148,3 @@ async def check_seat_availability(seat_number: str, train_number: str, date: dat
             return {"message": "Seat already booked."}
     else:
         return {"message": "Seat is available."}
-
